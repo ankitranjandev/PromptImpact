@@ -91,7 +91,15 @@ function updatePopup() {
           timeElement.id = 'lastTime';
           timeElement.style.color = '#666';
           timeElement.style.fontSize = '0.9em';
-          document.querySelector('h2').parentNode.insertBefore(timeElement, document.querySelector('h2').nextSibling);
+          const section = document.querySelector('.section');
+          if (section) {
+            const h2 = section.querySelector('h2');
+            if (h2 && h2.nextSibling) {
+              section.insertBefore(timeElement, h2.nextSibling);
+            } else if (h2) {
+              h2.parentNode.appendChild(timeElement);
+            }
+          }
         }
         timeElement.textContent = `Last updated: ${timeText}`;
       }

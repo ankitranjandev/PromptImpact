@@ -24,6 +24,7 @@ cp content.js "$BUILD_DIR/"
 cp popup.html "$BUILD_DIR/"
 cp popup.js "$BUILD_DIR/"
 cp README.md "$BUILD_DIR/"
+cp privacy-policy.md "$BUILD_DIR/"
 
 # Validate manifest.json
 echo "✅ Validating manifest.json..."
@@ -32,20 +33,21 @@ if ! python3 -c "import json; json.load(open('$BUILD_DIR/manifest.json'))" 2>/de
     exit 1
 fi
 
-# Create icons directory and add a simple icon (optional)
-mkdir -p "$BUILD_DIR/icons"
-
-# Create a simple SVG icon if none exists
-if [ ! -f "$BUILD_DIR/icons/icon48.png" ]; then
-    echo "🎨 Creating default icon..."
-    # You can replace this with actual icon files
-    echo '<svg width="48" height="48" xmlns="http://www.w3.org/2000/svg"><rect width="48" height="48" fill="#3498db"/><text x="24" y="30" font-family="Arial" font-size="16" fill="white" text-anchor="middle">AI</text></svg>' > "$BUILD_DIR/icons/icon.svg"
-fi
-
-# Update manifest to include icons if they exist
-if [ -f "$BUILD_DIR/icons/icon.svg" ]; then
-    echo "📝 Adding icon to manifest..."
-    # Note: For a real icon, you'd want to convert SVG to PNG and update manifest
+# Copy icons directory
+if [ -d "icons" ]; then
+    echo "📁 Copying icons..."
+    cp -r icons "$BUILD_DIR/"
+    
+    # Verify required PNG icons exist
+    if [ -f "$BUILD_DIR/icons/icon16.png" ] && [ -f "$BUILD_DIR/icons/icon48.png" ] && [ -f "$BUILD_DIR/icons/icon128.png" ]; then
+        echo "✅ All required PNG icons found"
+    else
+        echo "⚠️ Warning: Missing some required PNG icons (16, 48, 128px)"
+        echo "   Please ensure you have icon16.png, icon48.png, and icon128.png"
+    fi
+else
+    echo "❌ Icons directory not found!"
+    exit 1
 fi
 
 echo "🗜️  Creating ZIP package..."

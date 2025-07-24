@@ -73,6 +73,13 @@ const bases = {
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   try {
+    // Validate request structure
+    if (!request || !request.action) {
+      console.error('❌ Background: Invalid request received:', request);
+      sendResponse({ success: false, error: 'Invalid request structure' });
+      return;
+    }
+
     if (request.action === 'estimate') {
       const { model, inputTokens, outputTokens, mode } = request.data;
       
@@ -142,13 +149,19 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       
       console.log('📋 Background: Final estimate:', estimate);
 
-      // Save last estimate
-      chrome.storage.local.set({ lastEstimate: estimate }, () => {
-        if (chrome.runtime.lastError) {
-          console.error('❌ Background: Error saving last estimate:', chrome.runtime.lastError);
-        } else {
-          console.log('✅ Background: Last estimate saved');
+      // Save last estimate with quota check
+      chrome.storage.local.getBytesInUse(null, (bytesInUse) => {
+        if (bytesInUse > 4 * 1024 * 1024) { // 4MB warning threshold
+          console.warn('⚠️ Background: Storage quota approaching limit:', bytesInUse, 'bytes');
         }
+        
+        chrome.storage.local.set({ lastEstimate: estimate }, () => {
+          if (chrome.runtime.lastError) {
+            console.error('❌ Background: Error saving last estimate:', chrome.runtime.lastError);
+          } else {
+            console.log('✅ Background: Last estimate saved');
+          }
+        });
       });
 
       // Append to history for totals

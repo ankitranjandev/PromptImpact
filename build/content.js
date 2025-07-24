@@ -53,8 +53,11 @@ function detectModelForChatGPT() {
 }
 function observeModelForChatGPT() {
     detectModelForChatGPT();
-    const observer = new MutationObserver(() => detectModelForChatGPT());
-    observer.observe(document.body, { childList: true, subtree: true });
+    if (currentObserver) currentObserver.disconnect();
+    currentObserver = new MutationObserver(() => detectModelForChatGPT());
+    if (document.body) {
+        currentObserver.observe(document.body, { childList: true, subtree: true });
+    }
 }
 
 function detectModelForClaude() {
@@ -96,9 +99,17 @@ function detectModelForClaude() {
   window.localStorage.setItem('ai_model_detector_current_model', finalModel);
 }
 function observeModelForClaude() {
-  detectModelForClaude();
-  const o = new MutationObserver(detectModelForClaude);
-  o.observe(document.body, { childList: true, subtree: true });
+  try {
+    detectModelForClaude();
+    const o = new MutationObserver(detectModelForClaude);
+    if (document.body) {
+      o.observe(document.body, { childList: true, subtree: true });
+    } else {
+      console.warn('Claude: Document body not ready for observation');
+    }
+  } catch (error) {
+    console.error('Claude: Observer setup failed:', error);
+  }
 }
 
 function detectModelForPoe() {
@@ -296,48 +307,104 @@ function detectModelForGrok() {
 
 function observeModelForGrok() {
     detectModelForGrok();
-    const observer = new MutationObserver(() => detectModelForGrok());
-    observer.observe(document.body, { childList: true, subtree: true });
+    if (currentObserver) currentObserver.disconnect();
+    currentObserver = new MutationObserver(() => detectModelForGrok());
+    if (document.body) {
+        currentObserver.observe(document.body, { childList: true, subtree: true });
+    }
 }
 
 // ==========================
-// PLATFORM SWITCH
+// ENHANCED PLATFORM DETECTION WITH TAB SWITCHING SUPPORT
 // ==========================
 
-const host = window.location.hostname;
-console.log(`🌐 AI Impact Estimator: Loaded on ${host}`);
+let currentObserver = null;
+let detectionInterval = null;
 
-if (host === "chat.openai.com" || host === "chatgpt.com" || host.includes("openai.com")) {
-    console.log('🚀 Initializing ChatGPT detection...');
-    observeModelForChatGPT();
-} else if (host === "claude.ai" || host.includes("anthropic.com")) {
-    console.log('🚀 Initializing Claude detection...');
-    observeModelForClaude();
-} else if (host === "poe.com") {
-    console.log('🚀 Initializing Poe detection...');
-    observeModelForPoe();
-} else if (host === "gemini.google.com" || host.includes("bard.google.com")) {
-    console.log('🚀 Initializing Gemini detection...');
-    observeModelForGemini();
-} else if (host === "perplexity.ai") {
-    console.log('🚀 Initializing Perplexity detection...');
-    observeModelForPerplexity();
-} else if (host === "copilot.microsoft.com") {
-    console.log('🚀 Initializing Copilot detection...');
-    observeModelForCopilot();
-} else if (host === "chat.mistral.ai") {
-    console.log('🚀 Initializing Mistral detection...');
-    observeModelForMistral();
-} else if (
-    host === "grok.x.ai" ||
-    host === "grok.com" ||
-    (host.endsWith("x.com") && window.location.pathname.includes("grok"))
-) {
-    console.log('🚀 Initializing Grok detection...');
-    observeModelForGrok();
-} else {
-    console.log(`⚠️ Unknown host: ${host} - No specific model detection configured`);
+function initializePlatformDetection() {
+    const host = window.location.hostname;
+    console.log(`🌐 AI Impact Estimator: Initializing on ${host}`);
+
+    // Clear any existing observers/intervals
+    if (currentObserver) {
+        currentObserver.disconnect();
+        currentObserver = null;
+    }
+    if (detectionInterval) {
+        clearInterval(detectionInterval);
+        detectionInterval = null;
+    }
+
+    // Initialize platform-specific detection
+    if (host === "chat.openai.com" || host === "chatgpt.com" || host.includes("openai.com")) {
+        console.log('🚀 Initializing ChatGPT detection...');
+        observeModelForChatGPT();
+        // Periodic re-detection for model changes
+        detectionInterval = setInterval(detectModelForChatGPT, 3000);
+    } else if (host === "claude.ai" || host.includes("anthropic.com")) {
+        console.log('🚀 Initializing Claude detection...');
+        observeModelForClaude();
+        detectionInterval = setInterval(detectModelForClaude, 3000);
+    } else if (host === "poe.com") {
+        console.log('🚀 Initializing Poe detection...');
+        observeModelForPoe();
+        detectionInterval = setInterval(detectModelForPoe, 3000);
+    } else if (host === "gemini.google.com" || host.includes("bard.google.com")) {
+        console.log('🚀 Initializing Gemini detection...');
+        observeModelForGemini();
+        detectionInterval = setInterval(detectModelForGemini, 3000);
+    } else if (host === "perplexity.ai") {
+        console.log('🚀 Initializing Perplexity detection...');
+        observeModelForPerplexity();
+        detectionInterval = setInterval(detectModelForPerplexity, 3000);
+    } else if (host === "copilot.microsoft.com") {
+        console.log('🚀 Initializing Copilot detection...');
+        observeModelForCopilot();
+        detectionInterval = setInterval(detectModelForCopilot, 3000);
+    } else if (host === "chat.mistral.ai") {
+        console.log('🚀 Initializing Mistral detection...');
+        observeModelForMistral();
+        detectionInterval = setInterval(detectModelForMistral, 3000);
+    } else if (
+        host === "grok.x.ai" ||
+        host === "grok.com" ||
+        (host.endsWith("x.com") && window.location.pathname.includes("grok"))
+    ) {
+        console.log('🚀 Initializing Grok detection...');
+        observeModelForGrok();
+        detectionInterval = setInterval(detectModelForGrok, 3000);
+    } else {
+        console.log(`⚠️ Unknown host: ${host} - No specific model detection configured`);
+    }
 }
+
+// Initialize on load
+initializePlatformDetection();
+
+// Re-initialize when page changes (for SPAs)
+let lastUrl = location.href;
+new MutationObserver(() => {
+    const url = location.href;
+    if (url !== lastUrl) {
+        lastUrl = url;
+        console.log('🔄 URL changed, re-initializing detection...');
+        setTimeout(initializePlatformDetection, 1000); // Delay to let page load
+    }
+}).observe(document, { subtree: true, childList: true });
+
+// Listen for focus events (tab switching)
+window.addEventListener('focus', () => {
+    console.log('👁️ Tab focused, refreshing model detection...');
+    setTimeout(initializePlatformDetection, 500);
+});
+
+// Listen for visibility change (tab switching)
+document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) {
+        console.log('👁️ Tab became visible, refreshing model detection...');
+        setTimeout(initializePlatformDetection, 500);
+    }
+});
 
 console.log('AI Impact Estimator content script loaded on:', window.location.hostname);
 
@@ -500,8 +567,10 @@ if (document.body) {
 }
 
 // ==========================
-// UNIFIED MODEL DETECTION
+// ENHANCED MODEL DETECTION WITH CHANGE MONITORING
 // ==========================
+let lastDetectedModel = null;
+
 function detectModel() {
   const rawModel = window.localStorage.getItem('ai_model_detector_current_model') || 'unknown';
   console.log('🎯 Raw detected model:', rawModel);
@@ -524,6 +593,21 @@ function detectModel() {
     normalizedModel = 'gpt-3.5';
   }
   
+  // Log model changes
+  if (lastDetectedModel !== normalizedModel) {
+    console.log(`🔄 Model changed: ${lastDetectedModel} → ${normalizedModel}`);
+    lastDetectedModel = normalizedModel;
+  }
+  
   console.log('🎯 Normalized model:', normalizedModel);
   return normalizedModel;
 }
+
+// Monitor localStorage changes for immediate model updates
+const originalSetItem = localStorage.setItem;
+localStorage.setItem = function(key, value) {
+  if (key === 'ai_model_detector_current_model') {
+    console.log('📝 Model updated in localStorage:', value);
+  }
+  originalSetItem.apply(this, arguments);
+};
